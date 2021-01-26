@@ -1,50 +1,41 @@
-import models.FactsInformation;
-import models.RetrofitInterface;
+import models.AllFacts;
+import models.Fact;
+import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
-import retrofit2.Call;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-import java.io.IOException;
+import requests.FactsRequest;
+
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
-import static io.restassured.RestAssured.get;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static io.restassured.RestAssured.given;
-import static io.restassured.path.json.JsonPath.from;
+import static requests.FactRequest.getFact;
 
 public class MainTest {
-
-    String response;
-    List<String> ids;
 
     @Test
     public void test() throws NullPointerException {
         given().when().get("https://cat-fact.herokuapp.com/facts").then().statusCode(200);
-        response = get("https://cat-fact.herokuapp.com/facts").asString();
-        ids = from(response).getList("findAll{it.deleted == false}._id");
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://cat-fact.herokuapp.com/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        FactsInformation fact = null;
-        RetrofitInterface service = retrofit.create(RetrofitInterface.class);
-        showFactsAndAuthors(service, fact);
-    }
+        AllFacts.allFacts = FactsRequest.getFacts();
+        List<Fact> users = Arrays.stream(AllFacts.allFacts).map(fact -> getFact(fact.getFactId()))
+                .collect(Collectors.toList());
+        for (int i = 0; i < AllFacts.allFacts.length; i++)
+            System.out.println(Arrays.asList(AllFacts.allFacts).get(i).fact);
 
-    public void showFactsAndAuthors(RetrofitInterface service, FactsInformation fact) {
-        for (int i = 0; i < ids.size(); i++) {
-            Call<FactsInformation> call = service.listRepos(ids.get(i));
-            try {
-                retrofit2.Response<FactsInformation> response = call.execute();
-                fact = response.body();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            fact.showInfo();
-        }
+        Fact mvp = users.stream()
+                .collect(Collectors.groupingBy(w -> w, Collectors.counting()))
+                .entrySet()
+                .stream()
+                .max(Comparator.comparing(Map.Entry::getValue))
+                .get()
+                .getKey();
+        Fact fact = new Fact();
+        fact.user.name.first = "Kasimir";
+        fact.user.name.last = "Schulz";
+        AssertJUnit.assertEquals(fact, mvp);
+
     }
 }
-
-
-
-
-
