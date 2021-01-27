@@ -2,7 +2,9 @@ package models;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class AllFacts {
-    public static FactsInformation[] allFacts;
+    public List<FactsInformation> allFacts;
 }
